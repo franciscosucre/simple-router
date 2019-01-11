@@ -1,0 +1,27 @@
+{
+  "name": "simple-router",
+  "version": "1.0.0",
+  "description": "A simple, lightweight router for NodeJS Http server",
+  "main": "index.js",
+  "scripts": {
+    "test": "set NODE_ENV=test&& mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/franciscosucre/simple-router.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/franciscosucre/simple-router/issues"
+  },
+  "homepage": "https://github.com/franciscosucre/simple-router#readme",
+  "dependencies": {
+    "path-to-regexp": "^2.4.0"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "chai-http": "^4.2.1",
+    "mocha": "^5.2.0"
+  }
+}
