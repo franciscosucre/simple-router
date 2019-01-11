@@ -8,11 +8,21 @@ class Router {
     this.routes = [];
   }
 
+  /**
+   *
+   * @param {string} method
+   * @param {string} path
+   */
   match(method, path) {
     const route = this.routes.find(r => r.method == method && r.regex.test(path));
     return route || null;
   }
 
+  /**
+   *
+   * @param {http.IncomingMessage} req
+   * @param {http.ServerResponse} res
+   */
   async handle(req, res) {
     const { pathname } = url.parse(req.url);
     const route = this.match(req.method, pathname);
@@ -28,42 +38,89 @@ class Router {
     await route.handler(req, res);
   }
 
+  /**
+   *
+   * @param {string} method
+   * @param {string} path
+   * @param {function} handler
+   */
   addRoute(method, path, handler) {
     const route = this.routes.find(r => r.method === method && r.path === path);
     assert(!route, "Only one route per Path/Method combination is permitted");
     this.routes.push(new Route(method, path, handler));
   }
 
+  /**
+   *
+   * @param {string} path
+   * @param {function} handler
+   */
   options(path, handler) {
     this.addRoute("OPTIONS", path, handler);
   }
 
+  /**
+   *
+   * @param {string} path
+   * @param {function} handler
+   */
   head(path, handler) {
     this.addRoute("HEAD", path, handler);
   }
 
+  /**
+   *
+   * @param {string} path
+   * @param {function} handler
+   */
   get(path, handler) {
     this.addRoute("GET", path, handler);
   }
 
+  /**
+   *
+   * @param {string} path
+   * @param {function} handler
+   */
   post(path, handler) {
     this.addRoute("POST", path, handler);
   }
 
+  /**
+   *
+   * @param {string} path
+   * @param {function} handler
+   */
   put(path, handler) {
     this.addRoute("PUT", path, handler);
   }
 
+  /**
+   *
+   * @param {string} path
+   * @param {function} handler
+   */
   patch(path, handler) {
     this.addRoute("PATCH", path, handler);
   }
 
+  /**
+   *
+   * @param {string} path
+   * @param {function} handler
+   */
   delete(path, handler) {
     this.addRoute("DELETE", path, handler);
   }
 }
 
 class Route {
+  /**
+   *
+   * @param {string} method
+   * @param {string} path
+   * @param {function} handler
+   */
   constructor(method, path, handler) {
     assert(
       http.METHODS.includes(method),
