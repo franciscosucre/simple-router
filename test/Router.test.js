@@ -332,6 +332,19 @@ describe("Simple NodeJS Router", () => {
       response.should.have.status(200);
     });
 
+    it("It should run the middleware first and then the handlers", async () => {
+      router.useMiddleware((req, res) => {
+        req.middleware = true;
+      });
+      router.get(PATH, (req, res) => {
+        res.writeHead(200, headers);
+        res.end(JSON.stringify({ middleware: req.middleware }));
+      });
+      const response = await chai.request(server).get(PATH);
+      response.should.have.status(200);
+      response.should.have.status(200);
+    });
+
     it("It should run the handlers and store the arguments if a route with arguments was given", async () => {
       router.get(PATH_WITH_ARGUMENTS, SIMPLE_HANDLER);
       const response = await chai.request(server).get("/hello/world");
