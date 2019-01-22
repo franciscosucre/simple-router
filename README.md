@@ -5,7 +5,7 @@ A simple, lightweight router for NodeJS Http server. Middleware and nested route
 ## **How to install**
 
 ```shell
-npm install --save simple-router
+npm install --save @sugo/router
 ```
 
 ## **Adding routes**
