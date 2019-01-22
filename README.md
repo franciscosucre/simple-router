@@ -22,7 +22,7 @@ The syntax for adding routes is heavily inspired by the express router. Although
 
 ```javascript
 const router = new Router();
-router.get("/foo", (req, res) => console.log(req,res);
+router.get("/foo", (req, res) => console.log(req,res));
 ```
 
 ## **Nested Routers**
