@@ -1,6 +1,6 @@
 # simple-router
 
-A simple, lightweight router for NodeJS Http server. No Middleware, only simple routes with handlers.
+A simple, lightweight router for NodeJS Http server. Middleware and nested routers included. Promise oriented.
 
 ## **How to install**
 
@@ -8,29 +8,72 @@ A simple, lightweight router for NodeJS Http server. No Middleware, only simple 
 npm install --save simple-router
 ```
 
-# **Router**
+## **Adding routes**
 
-Main class.
+The syntax for adding routes is heavily inspired by the express router. Although it does not use it. The router class uses a general addRoute method internally but it is not meant to be used directly. The intended way is through the addRoute method aliases.
 
-## **Methods**
+- options(path, handler)
+- head(path, handler)
+- get(path, handler)
+- post(path, handler)
+- put(path, handler)
+- patch(path, handler)
+- delete(path, handler)
 
-- **addRoute(method, path, handler):** Adds a route to the router. Must be given a valid http method (GET, POST, etc), a path (/foo/fighters) and a handler function that receives a NodeJS request (IncomingMessage class) and response (ServerResponse). If a duplicate route is being registered, it will throw an AssertionError. This methods has different aliases for the most common http methods [options, head, get, post, put, patch, delete] that only receive the path and the handler.
+```javascript
+const router = new Router();
+router.get("/foo", (req, res) => console.log(req,res);
+```
 
-- **useSubrouter(path, router):** Appends the router routes to the main router with a path created by joining the path of the first router and the router given. This allows us to make module specific routers.
+## **Nested Routers**
+
+Nesting routers is supported using the useSubrouter method.
+
+**useSubrouter(path, router):** Appends the router routes to the main router with a path created by joining the path of the first router and the router given. This allows us to make module specific routers.
 
 ```javascript
 const router = new Router();
 const secondRouter = new Router();
-secondRouter.get("/foo", SIMPLE_HANDLER);
-secondRouter.get("/fighter", SIMPLE_HANDLER);
+secondRouter.get("/foo", req, res) => console.log(req,res));
+secondRouter.get("/fighter", req, res) => console.log(req,res));
 router.useSubrouter("/second", secondRouter);
+// The router now contains the '/second/foo' and '/second/fighter' routes
 ```
 
-- **match(method, path):** Search if it exists a registered route with the given http method and path. Returns the route if exists and returns null if not.
+## **Router Middleware**
 
-- **handle(req, res):** Executes the handler the route that matches the NodeJS request url and method. This method is an integration for NodeJS Http servers.
+Middleware can be added for the whole router using the useMiddleware method. The middleware stack is added at the start of any route handler stack when we add the route. A middleware only affects routes that were added after the middleware was added.
 
-## **Example with a NodeJS Http Server**
+```javascript
+const router = new Router();
+router.useMiddleware((req, res) => (req.foo = "fighters"));
+router.get("/foo", SIMPLE_HANDLER);
+router.post("/fighter", SIMPLE_HANDLER);
+// The foo IS available in the /foo and /fighter routes
+
+router.useMiddleware((req, res) => (req.fighters = true));
+// The fighters param IS NOT available in the /foo and /fighter routes
+```
+
+## **Route Middleware**
+
+Route middleware can be achieved using the .all() method. It makes sure that the given function is executed on each method in the selected route.
+
+```javascript
+const router = new Router();
+router.all("/foo", (req, res) => (req.foo = "fighters"));
+router.get("/foo", (req, res) => res.end(JSON.stringify({ foo: req.foo })));
+router.post("/foo", (req, res) => res.end(JSON.stringify({ foo: req.foo })));
+// The foo IS available in all the /foo routes
+```
+
+## **Compatibility with ExpressJS middleware**
+
+Because most of the middleware built for express are functions the receive a nodejs request (IncomingRequest) and response (ServerResponse) objects, they should be compatible with the useMiddleware method or an .all() route handler.
+
+## **Integration with NodeJS Http Server**
+
+To use the router with a NodeJS server we look for the request route/method combination in the router and then we execute the assigned handlers. This is done with the following methods.
 
 ```javascript
 const handleError = (req, res, err) => {
@@ -45,20 +88,24 @@ const handleError = (req, res, err) => {
   );
 };
 
-const server = http.createServer(async (reqExt, resExt) => {
+const server = http.createServer(async (req, res) => {
   try {
-    if (!router.match(reqExt.method, reqExt.url))
+    if (!router.match(req.method, res.url))
       throw {
         name: "ResourceNotFound",
         message: "Resource not found",
         status: 404
       };
-    await router.handle(reqExt, resExt);
+    await router.handle(req, res);
   } catch (error) {
-    handleError(reqExt, resExt, error);
+    handleError(req, res, error);
   }
 });
 ```
+
+- **match(method, path):** Search if it exists a registered route with the given http method and path. Returns the route if exists and returns null if not.
+
+- **handle(req, res):** Executes the handler the route that matches the NodeJS request url and method. This method is an integration for NodeJS Http servers.
 
 ## **How to test**
 

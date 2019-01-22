@@ -6,6 +6,7 @@ const http = require("http");
 class Router {
   constructor() {
     this.routes = [];
+    this.middleware = [];
   }
 
   match(method, path) {
@@ -39,12 +40,13 @@ class Router {
         `handler functions should receive 2 arguments, req and res. Value: ${handler.length}`
       );
     }
+    const handlers = this.middleware.concat(args);
     let route = this.routes.find(r => r.method === method && r.path === path);
     if (!route) {
-      route = new Route(method, path, args.shift());
+      route = new Route(method, path, handlers.shift());
       this.routes.push(route);
     }
-    route.handlers = route.handlers.concat(args);
+    route.handlers = route.handlers.concat(handlers);
     return this;
   }
 
@@ -61,13 +63,11 @@ class Router {
   }
 
   useMiddleware(...args) {
+    assert(args.length > 0, "At least one handler function must be passed");
     for (const handler of args) {
       assert(typeof handler === "function", `The 3rd or greater argument must be functions. Value: ${handler}`);
     }
-    for (const route of this.routes) {
-      const routeArgs = [route.path].concat(args);
-      this.all.apply(this, routeArgs);
-    }
+    this.middleware = this.middleware.concat(args);
     return this;
   }
 
