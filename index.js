@@ -8,21 +8,11 @@ class Router {
     this.routes = [];
   }
 
-  /**
-   *
-   * @param {string} method
-   * @param {string} path
-   */
   match(method, path) {
     const route = this.routes.find(r => r.method == method && r.regex.test(path));
     return route || null;
   }
 
-  /**
-   *
-   * @param {http.IncomingMessage} req
-   * @param {http.ServerResponse} res
-   */
   async handle(req, res) {
     const { pathname } = url.parse(req.url);
     const route = this.match(req.method, pathname);
@@ -35,102 +25,125 @@ class Router {
       prev[key.name] = cur;
       return prev;
     }, {});
-    await route.handler(req, res);
+    for (const handler of route.handlers) {
+      await handler(req, res);
+    }
   }
 
-  /**
-   *
-   * @param {string} method
-   * @param {string} path
-   * @param {function} handler
-   */
-  addRoute(method, path, handler) {
-    const route = this.routes.find(r => r.method === method && r.path === path);
-    assert(!route, "Only one route per Path/Method combination is permitted");
-    this.routes.push(new Route(method, path, handler));
+  addRoute(method, path, ...args) {
+    assert(args.length > 0, "At least one handler function must be passed");
+    for (const handler of args) {
+      assert(typeof handler === "function", `The 3rd or greater argument must be functions. Value: ${handler}`);
+      assert(
+        handler.length === 2,
+        `handler functions should receive 2 arguments, req and res. Value: ${handler.length}`
+      );
+    }
+    let route = this.routes.find(r => r.method === method && r.path === path);
+    if (!route) {
+      route = new Route(method, path, args.shift());
+      this.routes.push(route);
+    }
+    route.handlers = route.handlers.concat(args);
+    return this;
   }
 
-  /**
-   *
-   * @param {string} path
-   * @param {function} handler
-   */
-  options(path, handler) {
-    this.addRoute("OPTIONS", path, handler);
+  useSubrouter(path, router) {
+    assert(path, "path parameter is required");
+    assert(router, "router parameter is required");
+    assert(router instanceof Router, `router parameter must be Router instance, got ${typeof router}`);
+    const routes = router.routes.map(r => r);
+    for (const route of routes) {
+      const routeArgs = [route.method, path + route.path].concat(route.handlers);
+      this.addRoute.apply(this, routeArgs);
+    }
+    return this;
   }
 
-  /**
-   *
-   * @param {string} path
-   * @param {function} handler
-   */
-  head(path, handler) {
-    this.addRoute("HEAD", path, handler);
+  useMiddleware(...args) {
+    for (const handler of args) {
+      assert(typeof handler === "function", `The 3rd or greater argument must be functions. Value: ${handler}`);
+    }
+    for (const route of this.routes) {
+      const routeArgs = [route.path].concat(args);
+      this.all.apply(this, routeArgs);
+    }
+    return this;
   }
 
-  /**
-   *
-   * @param {string} path
-   * @param {function} handler
-   */
-  get(path, handler) {
-    this.addRoute("GET", path, handler);
+  all(path, ...args) {
+    const routeArgs = [path].concat(args);
+    this.options.apply(this, routeArgs);
+    this.head.apply(this, routeArgs);
+    this.get.apply(this, routeArgs);
+    this.post.apply(this, routeArgs);
+    this.put.apply(this, routeArgs);
+    this.patch.apply(this, routeArgs);
+    this.delete.apply(this, routeArgs);
+    return this;
   }
 
-  /**
-   *
-   * @param {string} path
-   * @param {function} handler
-   */
-  post(path, handler) {
-    this.addRoute("POST", path, handler);
+  options(path, ...args) {
+    const routeArgs = ["OPTIONS", path].concat(args);
+    this.addRoute.apply(this, routeArgs);
+    return this;
   }
 
-  /**
-   *
-   * @param {string} path
-   * @param {function} handler
-   */
-  put(path, handler) {
-    this.addRoute("PUT", path, handler);
+  head(path, ...args) {
+    const routeArgs = ["HEAD", path].concat(args);
+    this.addRoute.apply(this, routeArgs);
+    return this;
   }
 
-  /**
-   *
-   * @param {string} path
-   * @param {function} handler
-   */
-  patch(path, handler) {
-    this.addRoute("PATCH", path, handler);
+  get(path, ...args) {
+    const routeArgs = ["GET", path].concat(args);
+    this.addRoute.apply(this, routeArgs);
+    return this;
   }
 
-  /**
-   *
-   * @param {string} path
-   * @param {function} handler
-   */
-  delete(path, handler) {
-    this.addRoute("DELETE", path, handler);
+  post(path, ...args) {
+    const routeArgs = ["POST", path].concat(args);
+    this.addRoute.apply(this, routeArgs);
+    return this;
+  }
+
+  put(path, ...args) {
+    const routeArgs = ["PUT", path].concat(args);
+    this.addRoute.apply(this, routeArgs);
+    return this;
+  }
+
+  patch(path, ...args) {
+    const routeArgs = ["PATCH", path].concat(args);
+    this.addRoute.apply(this, routeArgs);
+    return this;
+  }
+
+  delete(path, ...args) {
+    const routeArgs = ["DELETE", path].concat(args);
+    this.addRoute.apply(this, routeArgs);
+    return this;
   }
 }
 
 class Route {
-  /**
-   *
-   * @param {string} method
-   * @param {string} path
-   * @param {function} handler
-   */
-  constructor(method, path, handler) {
+  constructor(method, path, ...args) {
     assert(
       http.METHODS.includes(method),
       `The "method" parameter must one of the following [${http.METHODS.toString()}]. Value: ${method}`
     );
     assert(typeof path === "string", `The "path" parameter must be a string. Value: ${path}`);
-    assert(typeof handler === "function", `The "handler" parameter must be a function. Value: ${handler}`);
+    assert(args.length > 0, "At least one handler function must be passed");
+    for (const handler of args) {
+      assert(typeof handler === "function", `The 3rd or greater argument must be functions. Value: ${handler}`);
+      assert(
+        handler.length === 2,
+        `handler functions should receive 2 arguments, req and res. Value: ${handler.length}`
+      );
+    }
     this.method = method;
     this.path = path;
-    this.handler = handler;
+    this.handlers = args;
     this.keys = [];
     this.regex = pathToRegexp(path, this.keys);
   }

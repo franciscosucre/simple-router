@@ -58,7 +58,7 @@ describe("Simple NodeJS Router", () => {
       fn.should.throw(AssertionError);
     });
 
-    it("It should throw an exception if the handler passed is not a function", async function() {
+    it("It should throw an exception if the handlers passed is not a function", async function() {
       let fn = () => router.addRoute(GET, PATH, "hfghgf");
       fn.should.throw(AssertionError);
       fn = () => router.addRoute(GET, PATH, 21323);
@@ -69,12 +69,11 @@ describe("Simple NodeJS Router", () => {
       fn.should.throw(AssertionError);
     });
 
-    it("It should throw an exception if try to add a duplicate route", async function() {
-      let fn = () => {
-        router.addRoute(GET, PATH, SIMPLE_HANDLER);
-        router.addRoute(GET, PATH, SIMPLE_HANDLER);
-      };
-      fn.should.throw(AssertionError);
+    it("It should create a route with two handlers if try to add a duplicate route", async function() {
+      router.addRoute(GET, PATH, SIMPLE_HANDLER);
+      router.addRoute(GET, PATH, SIMPLE_HANDLER);
+      router.routes.length.should.be.eql(1);
+      router.routes[0].handlers.length.should.be.eql(2);
     });
 
     it("It create a route", async function() {
@@ -84,7 +83,7 @@ describe("Simple NodeJS Router", () => {
       const [createdRoute] = routes;
       createdRoute.method.should.be.eql(GET);
       createdRoute.path.should.be.eql(PATH);
-      createdRoute.handler.should.be.eql(SIMPLE_HANDLER);
+      createdRoute.handlers[0].should.be.eql(SIMPLE_HANDLER);
     });
 
     it("It create a route with keys if given a path with arguments", async function() {
@@ -94,7 +93,7 @@ describe("Simple NodeJS Router", () => {
       const [createdRoute] = routes;
       createdRoute.method.should.be.eql(GET);
       createdRoute.path.should.be.eql(PATH_WITH_ARGUMENTS);
-      createdRoute.handler.should.be.eql(SIMPLE_HANDLER);
+      createdRoute.handlers[0].should.be.eql(SIMPLE_HANDLER);
       const keyStrings = createdRoute.keys.map(k => k.name);
       keyStrings.should.be.eql(["foo", "fighters"]);
     });
@@ -108,7 +107,7 @@ describe("Simple NodeJS Router", () => {
           const [createdRoute] = routes;
           createdRoute.method.should.be.eql(OPTIONS);
           createdRoute.path.should.be.eql(PATH);
-          createdRoute.handler.should.be.eql(SIMPLE_HANDLER);
+          createdRoute.handlers[0].should.be.eql(SIMPLE_HANDLER);
         });
       });
 
@@ -120,7 +119,7 @@ describe("Simple NodeJS Router", () => {
           const [createdRoute] = routes;
           createdRoute.method.should.be.eql(HEAD);
           createdRoute.path.should.be.eql(PATH);
-          createdRoute.handler.should.be.eql(SIMPLE_HANDLER);
+          createdRoute.handlers[0].should.be.eql(SIMPLE_HANDLER);
         });
       });
 
@@ -132,7 +131,7 @@ describe("Simple NodeJS Router", () => {
           const [createdRoute] = routes;
           createdRoute.method.should.be.eql(GET);
           createdRoute.path.should.be.eql(PATH);
-          createdRoute.handler.should.be.eql(SIMPLE_HANDLER);
+          createdRoute.handlers[0].should.be.eql(SIMPLE_HANDLER);
         });
       });
 
@@ -144,7 +143,7 @@ describe("Simple NodeJS Router", () => {
           const [createdRoute] = routes;
           createdRoute.method.should.be.eql(POST);
           createdRoute.path.should.be.eql(PATH);
-          createdRoute.handler.should.be.eql(SIMPLE_HANDLER);
+          createdRoute.handlers[0].should.be.eql(SIMPLE_HANDLER);
         });
       });
 
@@ -156,7 +155,7 @@ describe("Simple NodeJS Router", () => {
           const [createdRoute] = routes;
           createdRoute.method.should.be.eql(PUT);
           createdRoute.path.should.be.eql(PATH);
-          createdRoute.handler.should.be.eql(SIMPLE_HANDLER);
+          createdRoute.handlers[0].should.be.eql(SIMPLE_HANDLER);
         });
       });
 
@@ -168,7 +167,7 @@ describe("Simple NodeJS Router", () => {
           const [createdRoute] = routes;
           createdRoute.method.should.be.eql(PATCH);
           createdRoute.path.should.be.eql(PATH);
-          createdRoute.handler.should.be.eql(SIMPLE_HANDLER);
+          createdRoute.handlers[0].should.be.eql(SIMPLE_HANDLER);
         });
       });
 
@@ -180,9 +179,45 @@ describe("Simple NodeJS Router", () => {
           const [createdRoute] = routes;
           createdRoute.method.should.be.eql(DELETE);
           createdRoute.path.should.be.eql(PATH);
-          createdRoute.handler.should.be.eql(SIMPLE_HANDLER);
+          createdRoute.handlers[0].should.be.eql(SIMPLE_HANDLER);
         });
       });
+
+      describe(`ALL`, () => {
+        it("It should add a route for several methods method", async function() {
+          router.all(PATH, SIMPLE_HANDLER);
+          const routes = router.routes;
+          routes.length.should.be.eql(7);
+        });
+      });
+    });
+  });
+
+  describe(`useSubrouter`, () => {
+    it("It should throw an exception if no path is given", async function() {
+      const secondRouter = new Router();
+      let fn = () => router.useSubrouter(null, secondRouter);
+      fn.should.throw(AssertionError);
+    });
+
+    it("It should throw an exception if no router is given", async function() {
+      let fn = () => router.useSubrouter("/second", null);
+      fn.should.throw(AssertionError);
+    });
+
+    it("It should throw an exception if the router parameter is not a router instance", async function() {
+      let fn = () => router.useSubrouter("/second", "secondRouter");
+      fn.should.throw(AssertionError);
+    });
+
+    it("It should append all the secondRouter routes to the main router", async function() {
+      const secondRouter = new Router();
+      secondRouter.get("/foo", SIMPLE_HANDLER);
+      secondRouter.get("/fighter", SIMPLE_HANDLER);
+      router.useSubrouter("/second", secondRouter);
+      router.routes.length.should.be.eql(2);
+      router.routes[0].path.should.be.eql("/second/foo");
+      router.routes[1].path.should.be.eql("/second/fighter");
     });
   });
 
@@ -192,7 +227,7 @@ describe("Simple NodeJS Router", () => {
       const route = router.match(GET, PATH);
       route.should.have.property("method");
       route.should.have.property("path");
-      route.should.have.property("handler");
+      route.should.have.property("handlers");
       route.should.have.property("keys");
       route.should.have.property("regex");
     });
@@ -230,13 +265,13 @@ describe("Simple NodeJS Router", () => {
       server.close();
     });
 
-    it("It should run the handler", async function() {
+    it("It should run the handlers", async function() {
       router.get(PATH, SIMPLE_HANDLER);
       const response = await chai.request(server).get(PATH);
       response.should.have.status(200);
     });
 
-    it("It should run the handler and store the arguments if a route with arguments was given", async function() {
+    it("It should run the handlers and store the arguments if a route with arguments was given", async function() {
       router.get(PATH_WITH_ARGUMENTS, SIMPLE_HANDLER);
       const response = await chai.request(server).get("/hello/world");
       response.should.have.status(200);
