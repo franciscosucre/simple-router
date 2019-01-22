@@ -24,7 +24,7 @@ Paths are parsed using the [path-to-regexp](https://github.com/pillarjs/path-to-
 
 ```javascript
 const router = new Router();
-router.get("/foo", (req, res) => console.log(req,res);
+router.get("/foo", (req, res) => console.log(req,res));
 ```
 
 ## **Route Parameters**
