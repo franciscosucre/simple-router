@@ -20,9 +20,27 @@ The syntax for adding routes is heavily inspired by the express router. Although
 - patch(path, handler)
 - delete(path, handler)
 
+Paths are parsed using the [path-to-regexp](https://github.com/pillarjs/path-to-regexp) module. This module is mantained by the ExpressJS team through the [pillarjs](https://github.com/pillarjs/) project.
+
 ```javascript
 const router = new Router();
 router.get("/foo", (req, res) => console.log(req,res);
+```
+
+## **Route Parameters**
+
+Route parameters are parsed with the [path-to-regexp](https://github.com/pillarjs/path-to-regexp) and then stored in the params property in the request object.
+
+```javascript
+const router = new Router();
+router.get("/:foo/:fighters", (req, res) => {
+  res.writeHead(200, headers);
+  res.end(
+    JSON.stringify({
+      params: req.params
+    })
+  );
+});
 ```
 
 ## **Nested Routers**
@@ -47,8 +65,10 @@ Middleware can be added for the whole router using the useMiddleware method. The
 ```javascript
 const router = new Router();
 router.useMiddleware((req, res) => (req.foo = "fighters"));
-router.get("/foo", SIMPLE_HANDLER);
-router.post("/fighter", SIMPLE_HANDLER);
+router.get("/foo", (req, res) => res.end(JSON.stringify({ foo: req.foo })));
+router.post("/fighter", (req, res) =>
+  res.end(JSON.stringify({ foo: req.foo }))
+);
 // The foo IS available in the /foo and /fighter routes
 
 router.useMiddleware((req, res) => (req.fighters = true));
@@ -76,6 +96,9 @@ Because most of the middleware built for express are functions the receive a nod
 To use the router with a NodeJS server we look for the request route/method combination in the router and then we execute the assigned handlers. This is done with the following methods.
 
 ```javascript
+const router = new Router();
+router.get("/foo", (req, res) => res.end(JSON.stringify({ success: true })));
+
 const handleError = (req, res, err) => {
   const status = err.status || 500;
   res.writeHead(status, headers);
