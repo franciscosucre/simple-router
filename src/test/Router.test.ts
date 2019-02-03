@@ -1,7 +1,9 @@
 import * as chai from 'chai'
 import * as http from 'http'
+import * as assert from 'assert'
+import Router, { IDynamicRequest } from '..';
 const AssertionError = assert.AssertionError;
-let router;
+let router: Router;
 const OPTIONS = "OPTIONS";
 const HEAD = "HEAD";
 const GET = "GET";
@@ -13,7 +15,7 @@ const DELETE = "DELETE";
 const PATH = "/foo";
 const PATH_WITH_ARGUMENTS = "/:foo/:fighters";
 const headers = { "Content-Type": "application/json" };
-const SIMPLE_HANDLER = (req, res) => {
+const SIMPLE_HANDLER = (req: IDynamicRequest, res: http.ServerResponse) => {
   res.writeHead(200, headers);
   res.end(
     JSON.stringify({
@@ -21,7 +23,7 @@ const SIMPLE_HANDLER = (req, res) => {
     })
   );
 };
-const SIMPLE_MIDDLEWARE = (req, res) => {
+const SIMPLE_MIDDLEWARE = (req: IDynamicRequest, res: http.ServerResponse) => {
   req.middlwarePassed = true;
 };
 const chaiHttp = require("chai-http");
@@ -40,40 +42,12 @@ describe("Simple NodeJS Router", () => {
 
   describe(`Constructor`, () => {
     it("It should create a router without arguments", async () => {
-      const fn = () => new Router({});
+      const fn = () => new Router();
       fn.should.not.throw(Error);
     });
   });
 
   describe(`addRoute`, () => {
-    it("It should throw an exception if the method passed is not a http method", async () => {
-      let fn = () => router.addRoute(324, PATH, SIMPLE_HANDLER);
-      fn.should.throw(AssertionError);
-      fn = () => router.addRoute("foo", PATH, SIMPLE_HANDLER);
-      fn.should.throw(AssertionError);
-      fn = () => router.addRoute(null, () => PATH, SIMPLE_HANDLER);
-      fn.should.throw(AssertionError);
-    });
-
-    it("It should throw an exception if the path passed is not a string", async () => {
-      let fn = () => router.addRoute(GET, 324, SIMPLE_HANDLER);
-      fn.should.throw(AssertionError);
-      fn = () => router.addRoute(GET, null, SIMPLE_HANDLER);
-      fn.should.throw(AssertionError);
-      fn = () => router.addRoute(GET, () => "console", SIMPLE_HANDLER);
-      fn.should.throw(AssertionError);
-    });
-
-    it("It should throw an exception if the handlers passed is not a function", async () => {
-      let fn = () => router.addRoute(GET, PATH, "hfghgf");
-      fn.should.throw(AssertionError);
-      fn = () => router.addRoute(GET, PATH, 21323);
-      fn.should.throw(AssertionError);
-      fn = () => router.addRoute(GET, PATH, null);
-      fn.should.throw(AssertionError);
-      fn = () => router.addRoute(GET, PATH);
-      fn.should.throw(AssertionError);
-    });
 
     it("It should create a route with two handlers if try to add a duplicate route", async () => {
       router.addRoute(GET, PATH, SIMPLE_HANDLER);
@@ -203,6 +177,7 @@ describe("Simple NodeJS Router", () => {
     it("It should return the route if it exists", async () => {
       router.get(PATH, SIMPLE_HANDLER);
       const route = router.match(GET, PATH);
+      if (!route) throw new Error("Test gone wrong!")
       route.should.have.property("method");
       route.should.have.property("path");
       route.should.have.property("handlers");
@@ -222,11 +197,6 @@ describe("Simple NodeJS Router", () => {
       fn.should.throw(AssertionError);
     });
 
-    it("It should throw an exception if a handler given is not a function", async () => {
-      const fn = () => router.useMiddleware("hola", (req, res) => res.end(JSON.stringify({ foo: "fighters" })));
-      fn.should.throw(AssertionError);
-    });
-
     it("It should add the middleware before the router handler", async () => {
       router.useMiddleware(SIMPLE_MIDDLEWARE);
       router.get("/foo", SIMPLE_HANDLER);
@@ -243,21 +213,6 @@ describe("Simple NodeJS Router", () => {
   });
 
   describe(`useSubrouter`, () => {
-    it("It should throw an exception if no path is given", async () => {
-      const secondRouter = new Router();
-      let fn = () => router.useSubrouter(null, secondRouter);
-      fn.should.throw(AssertionError);
-    });
-
-    it("It should throw an exception if no router is given", async () => {
-      let fn = () => router.useSubrouter("/second", null);
-      fn.should.throw(AssertionError);
-    });
-
-    it("It should throw an exception if the router parameter is not a router instance", async () => {
-      let fn = () => router.useSubrouter("/second", "secondRouter");
-      fn.should.throw(AssertionError);
-    });
 
     it("It should append all the secondRouter routes to the main router", async () => {
       const secondRouter = new Router();
@@ -299,11 +254,11 @@ describe("Simple NodeJS Router", () => {
   });
 
   describe(`handle`, () => {
-    const server = http.createServer(async (req, res) => {
+    const server = http.createServer(async (req: http.IncomingMessage,res: http.ServerResponse) => {
       try {
-        if (!router.match(req.method, req.url))
+        if (!router.match(req.method || '', req.url || ''))
           throw { name: "ResourceNotFound", message: "Resource not found", status: 404 };
-        await router.handle(req, res);
+        await router.handle(req as IDynamicRequest, res);
       } catch (error) {
         const status = error.status || 500;
         res.writeHead(status, headers);

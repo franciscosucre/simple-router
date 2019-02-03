@@ -3,10 +3,17 @@ import * as http from 'http'
 import * as url from 'url'
 import * as assert from 'assert'
 
-export type HandlerFunction = (req: any, res: any) => void;
+export type HandlerFunction = (req: IDynamicRequest, res: http.ServerResponse) => void;
 
 export class RouteNotFoundError extends Error {
   message= "No route was found when calling the handle method, please check with the match method first so you can handle the error"
+}
+
+export interface IDynamicRequest extends http.IncomingMessage {
+  url: string;
+  method: string;
+  params ?: any;
+  [key: string]: any;
 }
 
 export default class Router {
@@ -23,7 +30,7 @@ export default class Router {
     return route || null;
   }
 
-  async handle(req: any, res: any) {
+  async handle(req: IDynamicRequest, res: http.ServerResponse) {
     const { pathname } = url.parse(req.url);
     if (!pathname){
       throw new Error("Could not parse pathname from url")
