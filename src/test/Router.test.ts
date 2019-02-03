@@ -1,6 +1,5 @@
-const chai = require("chai");
-const Router = require("../index");
-const assert = require("assert");
+import * as chai from 'chai'
+import * as http from 'http'
 const AssertionError = assert.AssertionError;
 let router;
 const OPTIONS = "OPTIONS";
@@ -10,7 +9,7 @@ const POST = "POST";
 const PUT = "PUT";
 const PATCH = "PATCH";
 const DELETE = "DELETE";
-const http = require("http");
+
 const PATH = "/foo";
 const PATH_WITH_ARGUMENTS = "/:foo/:fighters";
 const headers = { "Content-Type": "application/json" };
