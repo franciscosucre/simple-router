@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import * as chai from 'chai';
 import * as http from 'http';
 import * as supertest from 'supertest';
-import Router, { IDynamicRequest } from '..';
+import Router from '..';
 const AssertionError = assert.AssertionError;
 let router: Router;
 const OPTIONS = 'OPTIONS';
@@ -16,7 +16,7 @@ const DELETE = 'DELETE';
 const PATH = '/foo';
 const PATH_WITH_ARGUMENTS = '/:foo/:fighters';
 const headers = { 'Content-Type': 'application/json' };
-const SIMPLE_HANDLER = (req: IDynamicRequest, res: http.ServerResponse) => {
+const SIMPLE_HANDLER = (req: any, res: http.ServerResponse) => {
   res.writeHead(200, headers);
   res.end(
     JSON.stringify({
@@ -24,7 +24,7 @@ const SIMPLE_HANDLER = (req: IDynamicRequest, res: http.ServerResponse) => {
     }),
   );
 };
-const SIMPLE_MIDDLEWARE = (req: IDynamicRequest, res: http.ServerResponse) => {
+const SIMPLE_MIDDLEWARE = (req: any, res: http.ServerResponse) => {
   req.middlwarePassed = true;
 };
 chai.should();
@@ -258,7 +258,7 @@ describe('Simple NodeJS Router', () => {
         if (!router.match(req.method || '', req.url || '')) {
           throw { name: 'ResourceNotFound', message: 'Resource not found', status: 404 };
         }
-        await router.handle(req as IDynamicRequest, res);
+        await router.handle(req as any, res);
       } catch (error) {
         const status = error.status || 500;
         res.writeHead(status, headers);

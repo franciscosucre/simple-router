@@ -4,14 +4,7 @@ import * as pathToRegexp from 'path-to-regexp';
 import * as url from 'url';
 import Route from './Route';
 
-export type HandlerFunction = (req: IDynamicRequest, res: http.ServerResponse) => void;
-
-export interface IDynamicRequest extends http.IncomingMessage {
-  url: string;
-  method: string;
-  params?: any;
-  [key: string]: any;
-}
+export type HandlerFunction = (req: any, res: http.ServerResponse) => void;
 
 export default class Router {
   public routes: Route[];
@@ -27,7 +20,7 @@ export default class Router {
     return route || null;
   }
 
-  public async handle(req: IDynamicRequest, res: http.ServerResponse) {
+  public async handle(req: any, res: http.ServerResponse) {
     const { pathname } = url.parse(req.url);
     if (!pathname) {
       throw new Error('Could not parse pathname from url');
