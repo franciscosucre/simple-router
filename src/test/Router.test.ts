@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import * as chai from 'chai';
 import * as http from 'http';
+import * as supertest from 'supertest';
 import Router, { IDynamicRequest } from '..';
 const AssertionError = assert.AssertionError;
 let router: Router;
@@ -26,8 +27,6 @@ const SIMPLE_HANDLER = (req: IDynamicRequest, res: http.ServerResponse) => {
 const SIMPLE_MIDDLEWARE = (req: IDynamicRequest, res: http.ServerResponse) => {
   req.middlwarePassed = true;
 };
-import chaiHttp = require('chai-http');
-chai.use(chaiHttp);
 chai.should();
 
 // Our parent block
@@ -283,8 +282,8 @@ describe('Simple NodeJS Router', () => {
 
     it('It should run the handlers', async () => {
       router.get(PATH, SIMPLE_HANDLER);
-      const response = await chai.request(server).get(PATH);
-      response.should.have.status(200);
+      const response = await supertest(server).get(PATH);
+      response.status.should.be.eql(200);
     });
 
     it('It should run the middleware first and then the handlers', async () => {
@@ -295,15 +294,15 @@ describe('Simple NodeJS Router', () => {
         res.writeHead(200, headers);
         res.end(JSON.stringify({ middleware: req.middleware }));
       });
-      const response = await chai.request(server).get(PATH);
-      response.should.have.status(200);
-      response.should.have.status(200);
+      const response = await supertest(server).get(PATH);
+      response.status.should.be.eql(200);
+      response.status.should.be.eql(200);
     });
 
     it('It should run the handlers and store the arguments if a route with arguments was given', async () => {
       router.get(PATH_WITH_ARGUMENTS, SIMPLE_HANDLER);
-      const response = await chai.request(server).get('/hello/world');
-      response.should.have.status(200);
+      const response = await supertest(server).get('/hello/world');
+      response.status.should.be.eql(200);
       response.body.should.have.property('params');
       response.body.params.should.have.property('foo');
       response.body.params.should.have.property('fighters');
