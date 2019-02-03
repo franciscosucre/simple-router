@@ -4,7 +4,7 @@ import * as pathToRegexp from 'path-to-regexp';
 import * as url from 'url';
 import Route from './Route';
 
-export type HandlerFunction = (req: any, res: http.ServerResponse) => void;
+export type HandlerFunction = (req: any, res: any) => void;
 
 export default class Router {
   public routes: Route[];
