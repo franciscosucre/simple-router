@@ -32,8 +32,6 @@ export default class Router {
     await route.handle(req, res);
   }
 
-  public async runHandlers() {}
-
   public addRoute(method: string, path: string, ...args: HandlerFunction[]) {
     assert(args.length > 0, 'At least one handler function must be passed');
     const handlers = this.middleware.concat(args);
