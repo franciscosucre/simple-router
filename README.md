@@ -22,23 +22,25 @@ The syntax for adding routes is heavily inspired by the express router. Although
 
 Paths are parsed using the [path-to-regexp](https://github.com/pillarjs/path-to-regexp) module. This module is mantained by the ExpressJS team through the [pillarjs](https://github.com/pillarjs/) project.
 
-```javascript
+```typescript
+import { Router, IRequest, IResponse } from '@sugo/router';
 const router = new Router();
-router.get("/foo", (req, res) => console.log(req, res));
+router.get('/foo', (req: IRequest, res: IResponse) => console.log(req, res));
 ```
 
 ## **Route Parameters**
 
-Route parameters are parsed with the [path-to-regexp](https://github.com/pillarjs/path-to-regexp) and then stored in the params property in the request object.
+Route parameters are parsed with the [path-to-regexp](https://github.com/pillarjs/path-to-regexp) and then stored in the params property in the IRequest object.
 
-```javascript
+```typescript
+import { Router, IRequest, IResponse } from '@sugo/router';
 const router = new Router();
-router.get("/:foo/:fighters", (req, res) => {
+router.get('/:foo/:fighters', (req: IRequest, res: IResponse) => {
   res.writeHead(200, headers);
   res.end(
     JSON.stringify({
-      params: req.params
-    })
+      params: req.params,
+    }),
   );
 });
 ```
@@ -49,12 +51,13 @@ Nesting routers is supported using the useSubrouter method.
 
 **useSubrouter(path, router):** Appends the router routes to the main router with a path created by joining the path of the first router and the router given. This allows us to make module specific routers.
 
-```javascript
+```typescript
+import { Router, IRequest, IResponse } from '@sugo/router';
 const router = new Router();
 const secondRouter = new Router();
-secondRouter.get("/foo", req, res) => console.log(req,res));
-secondRouter.get("/fighter", req, res) => console.log(req,res));
-router.useSubrouter("/second", secondRouter);
+secondRouter.get('/foo', (req: IRequest, res: IResponse) => console.log(req, res));
+secondRouter.get('/fighter', (req: IRequest, res: IResponse) => console.log(req, res));
+router.useSubrouter('/second', secondRouter);
 // The router now contains the '/second/foo' and '/second/fighter' routes
 ```
 
@@ -62,16 +65,15 @@ router.useSubrouter("/second", secondRouter);
 
 Middleware can be added for the whole router using the useMiddleware method. The middleware stack is added at the start of any route handler stack when we add the route. A middleware only affects routes that were added after the middleware was added.
 
-```javascript
+```typescript
+import { Router, IRequest, IResponse } from '@sugo/router';
 const router = new Router();
-router.useMiddleware((req, res) => (req.foo = "fighters"));
-router.get("/foo", (req, res) => res.end(JSON.stringify({ foo: req.foo })));
-router.post("/fighter", (req, res) =>
-  res.end(JSON.stringify({ foo: req.foo }))
-);
+router.useMiddleware((req: IRequest, res: IResponse) => (req.foo = 'fighters'));
+router.get('/foo', (req: IRequest, res: IResponse) => res.end(JSON.stringify({ foo: req.foo })));
+router.post('/fighter', (req: IRequest, res: IResponse) => res.end(JSON.stringify({ foo: req.foo })));
 // The foo IS available in the /foo and /fighter routes
 
-router.useMiddleware((req, res) => (req.fighters = true));
+router.useMiddleware((req: IRequest, res: IResponse) => (req.fighters = true));
 // The fighters param IS NOT available in the /foo and /fighter routes
 ```
 
@@ -79,46 +81,43 @@ router.useMiddleware((req, res) => (req.fighters = true));
 
 Route middleware can be achieved using the .all() method. It makes sure that the given function is executed on each method in the selected route.
 
-```javascript
+```typescript
+import { Router, IRequest, IResponse } from '@sugo/router';
 const router = new Router();
-router.all("/foo", (req, res) => (req.foo = "fighters"));
-router.get("/foo", (req, res) => res.end(JSON.stringify({ foo: req.foo })));
-router.post("/foo", (req, res) => res.end(JSON.stringify({ foo: req.foo })));
+router.all('/foo', (req: IRequest, res: IResponse) => (req.foo = 'fighters'));
+router.get('/foo', (req: IRequest, res: IResponse) => res.end(JSON.stringify({ foo: req.foo })));
+router.post('/foo', (req: IRequest, res: IResponse) => res.end(JSON.stringify({ foo: req.foo })));
 // The foo IS available in all the /foo routes
 ```
 
 ## **Compatibility with ExpressJS middleware**
 
-Because most of the middleware built for express are functions the receive a nodejs request (IncomingRequest) and response (ServerResponse) objects, they should be compatible with the useMiddleware method or an .all() route handler.
+Because most of the middleware built for express are functions the receive a nodejs IRequest (IncomingRequest) and IResponse (ServerResponse) objects, they should be compatible with the useMiddleware method or an .all() route handler.
 
 ## **Integration with NodeJS Http Server**
 
-To use the router with a NodeJS server we look for the request route/method combination in the router and then we execute the assigned handlers. This is done with the following methods.
+To use the router with a NodeJS server we look for the IRequest route/method combination in the router and then we execute the assigned handlers. This is done with the following methods.
 
-```javascript
+```typescript
+import { Router, IRequest, IResponse } from '@sugo/router';
+import * as http from 'http';
 const router = new Router();
-router.get("/foo", (req, res) => res.end(JSON.stringify({ success: true })));
+router.get('/foo', (req: IRequest, res: IResponse) => res.end(JSON.stringify({ success: true })));
 
-const handleError = (req, res, err) => {
+const handleError = (req: IRequest, res: IResponse, err: any) => {
   const status = err.status || 500;
   res.writeHead(status, headers);
   res.end(
     JSON.stringify({
-      code: err.code || err.name || "Error",
-      message: err.message || "An unexpected error has ocurred",
-      status
-    })
+      code: err.code || err.name || 'Error',
+      message: err.message || 'An unexpected error has ocurred',
+      status,
+    }),
   );
 };
 
-const server = http.createServer(async (req, res) => {
+const server = http.createServer(async (req: IRequest, res: IResponse) => {
   try {
-    if (!router.match(req.method, res.url))
-      throw {
-        name: "ResourceNotFound",
-        message: "Resource not found",
-        status: 404
-      };
     await router.handle(req, res);
   } catch (error) {
     handleError(req, res, error);
@@ -128,7 +127,7 @@ const server = http.createServer(async (req, res) => {
 
 - **match(method, path):** Search if it exists a registered route with the given http method and path. Returns the route if exists and returns null if not.
 
-- **handle(req, res):** Executes the handler the route that matches the NodeJS request url and method. This method is an integration for NodeJS Http servers.
+- **handle(req, res):** Executes the handler the route that matches the NodeJS IRequest url and method. This method is an integration for NodeJS Http servers.
 
 ## **How to test**
 

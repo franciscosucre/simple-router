@@ -3,6 +3,7 @@ import * as chai from 'chai';
 import * as http from 'http';
 import * as supertest from 'supertest';
 import Router from '..';
+import { INextFunction, IRequest, IResponse } from '../interfaces';
 const AssertionError = assert.AssertionError;
 let router: Router;
 const OPTIONS = 'OPTIONS';
@@ -255,9 +256,6 @@ describe('Simple NodeJS Router', () => {
   describe(`handle`, () => {
     const server = http.createServer(async (req: http.IncomingMessage, res: http.ServerResponse) => {
       try {
-        if (!router.match(req.method || '', req.url || '')) {
-          throw { name: 'ResourceNotFound', message: 'Resource not found', status: 404 };
-        }
         await router.handle(req as any, res);
       } catch (error) {
         const status = error.status || 500;
@@ -272,14 +270,6 @@ describe('Simple NodeJS Router', () => {
       }
     });
 
-    before(async () => {
-      server.listen(3000);
-    });
-
-    after(async () => {
-      server.close();
-    });
-
     it('It should run the handlers', async () => {
       router.get(PATH, SIMPLE_HANDLER);
       const response = await supertest(server).get(PATH);
@@ -287,16 +277,54 @@ describe('Simple NodeJS Router', () => {
     });
 
     it('It should run the middleware first and then the handlers', async () => {
-      router.useMiddleware((req, res) => {
+      router.useMiddleware(async (req: IRequest, res: IResponse, next?: INextFunction) => {
         req.middleware = true;
+        if (next) {
+          await next();
+        }
       });
-      router.get(PATH, (req, res) => {
+      router.get(PATH, (req: IRequest, res: IResponse) => {
         res.writeHead(200, headers);
         res.end(JSON.stringify({ middleware: req.middleware }));
       });
       const response = await supertest(server).get(PATH);
       response.status.should.be.eql(200);
-      response.status.should.be.eql(200);
+      response.body.middleware.should.be.eql(true);
+    });
+
+    it('should handle the route and then continue the middleware', async () => {
+      router.useMiddleware(async (req: IRequest, res: IResponse, next?: INextFunction) => {
+        req.handlerPassed = false;
+        req.middlewarePassed = false;
+        if (next) {
+          await next();
+        }
+        req.handlerPassed.should.be.eql(true);
+        req.middlewarePassed.should.be.eql(true);
+      });
+      router.useMiddleware(async (req: IRequest, res: IResponse, next?: INextFunction) => {
+        req.middlewarePassed = true;
+        if (next) {
+          await next();
+        }
+      });
+      router.get(PATH, (req: IRequest, res: IResponse) => {
+        req.handlerPassed = true;
+        res.writeHead(200, headers);
+        res.end(JSON.stringify({ handlerPassed: req.handlerPassed, middlewarePassed: req.middlewarePassed }));
+      });
+      const response = await supertest(server).get(PATH);
+      response.status.should.have.be.eql(200);
+    });
+
+    it('should handle the middleware errors', async () => {
+      router.useMiddleware(async (req: IRequest, res: IResponse, next?: INextFunction) => {
+        throw new Error('MiddlewareError');
+      });
+      router.get(PATH, SIMPLE_HANDLER);
+      const response = await supertest(server).get(PATH);
+      response.status.should.have.be.eql(500);
+      response.body.message.should.be.eql('MiddlewareError');
     });
 
     it('It should run the handlers and store the arguments if a route with arguments was given', async () => {
