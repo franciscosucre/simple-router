@@ -344,23 +344,9 @@ describe('Simple NodeJS Router', () => {
   });
 
   describe(`@sugo/server compability`, () => {
-    class DummyLogger implements ILogger {
-      public log(message: string) {}
-
-      public info(message: string) {}
-
-      public debug(message: string) {}
-
-      public error(message: string) {}
-
-      public warn(message: string) {}
-    }
-
     it('should be compatible', async () => {
       router.get('/foo', (req: SuGoRequest, res: SuGoResponse) => res.json({ foo: 'fighters' }));
-      const sugoServer = sugoJS
-        .createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res))
-        .setLogger(new DummyLogger());
+      const sugoServer = sugoJS.createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res));
       const response = await supertest(sugoServer).get('/foo');
       response.status.should.be.eql(200);
     });
