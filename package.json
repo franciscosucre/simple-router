@@ -1,6 +1,6 @@
 {
   "name": "@sugo/router",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "A simple, lightweight router for NodeJS Http server",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
