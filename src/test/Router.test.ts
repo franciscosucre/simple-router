@@ -1,9 +1,13 @@
+import * as sugoJS from '@sugo/server';
+import { ILogger } from '@sugo/server';
+import SuGoRequest from '@sugo/server/dist/Request';
+import SuGoResponse from '@sugo/server/dist/Response';
 import * as assert from 'assert';
 import * as chai from 'chai';
 import * as http from 'http';
 import * as supertest from 'supertest';
 import Router from '..';
-import { INextFunction, IRequest, IResponse } from '../interfaces';
+import { INextFunction } from '../interfaces';
 const AssertionError = assert.AssertionError;
 let router: Router;
 const OPTIONS = 'OPTIONS';
@@ -277,13 +281,13 @@ describe('Simple NodeJS Router', () => {
     });
 
     it('It should run the middleware first and then the handlers', async () => {
-      router.useMiddleware(async (req: IRequest, res: IResponse, next?: INextFunction) => {
+      router.useMiddleware(async (req: any, res: any, next?: INextFunction) => {
         req.middleware = true;
         if (next) {
           await next();
         }
       });
-      router.get(PATH, (req: IRequest, res: IResponse) => {
+      router.get(PATH, (req: any, res: any) => {
         res.writeHead(200, headers);
         res.end(JSON.stringify({ middleware: req.middleware }));
       });
@@ -293,7 +297,7 @@ describe('Simple NodeJS Router', () => {
     });
 
     it('should handle the route and then continue the middleware', async () => {
-      router.useMiddleware(async (req: IRequest, res: IResponse, next?: INextFunction) => {
+      router.useMiddleware(async (req: any, res: any, next?: INextFunction) => {
         req.handlerPassed = false;
         req.middlewarePassed = false;
         if (next) {
@@ -302,13 +306,13 @@ describe('Simple NodeJS Router', () => {
         req.handlerPassed.should.be.eql(true);
         req.middlewarePassed.should.be.eql(true);
       });
-      router.useMiddleware(async (req: IRequest, res: IResponse, next?: INextFunction) => {
+      router.useMiddleware(async (req: any, res: any, next?: INextFunction) => {
         req.middlewarePassed = true;
         if (next) {
           await next();
         }
       });
-      router.get(PATH, (req: IRequest, res: IResponse) => {
+      router.get(PATH, (req: any, res: any) => {
         req.handlerPassed = true;
         res.writeHead(200, headers);
         res.end(JSON.stringify({ handlerPassed: req.handlerPassed, middlewarePassed: req.middlewarePassed }));
@@ -318,7 +322,7 @@ describe('Simple NodeJS Router', () => {
     });
 
     it('should handle the middleware errors', async () => {
-      router.useMiddleware(async (req: IRequest, res: IResponse, next?: INextFunction) => {
+      router.useMiddleware(async (req: any, res: any, next?: INextFunction) => {
         throw new Error('MiddlewareError');
       });
       router.get(PATH, SIMPLE_HANDLER);
@@ -336,6 +340,29 @@ describe('Simple NodeJS Router', () => {
       response.body.params.should.have.property('fighters');
       response.body.params.foo.should.be.eql('hello');
       response.body.params.fighters.should.be.eql('world');
+    });
+  });
+
+  describe(`@sugo/server compability`, () => {
+    class DummyLogger implements ILogger {
+      public log(message: string) {}
+
+      public info(message: string) {}
+
+      public debug(message: string) {}
+
+      public error(message: string) {}
+
+      public warn(message: string) {}
+    }
+
+    it('should be compatible', async () => {
+      router.get('/foo', (req: SuGoRequest, res: SuGoResponse) => res.json({ foo: 'fighters' }));
+      const sugoServer = sugoJS
+        .createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res))
+        .setLogger(new DummyLogger());
+      const response = await supertest(sugoServer).get('/foo');
+      response.status.should.be.eql(200);
     });
   });
 });

@@ -1,7 +1,6 @@
 import * as assert from 'assert';
-import * as http from 'http';
 import * as url from 'url';
-import { HandlerFunction, IRequest, IResponse } from './interfaces';
+import { HandlerFunction } from './interfaces';
 import Route from './Route';
 
 export default class Router {
@@ -18,7 +17,7 @@ export default class Router {
     return route || null;
   }
 
-  public async handle(req: IRequest, res: IResponse) {
+  public async handle(req: any, res: any) {
     const { pathname } = url.parse(req.url || '');
     if (!pathname) {
       throw new Error('Could not parse pathname from url');
