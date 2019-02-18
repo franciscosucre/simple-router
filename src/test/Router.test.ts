@@ -370,11 +370,21 @@ describe('Simple NodeJS Router', () => {
     it('should be compatible', async () => {
       router.get('/foo', (req: SuGoRequest, res: SuGoResponse) => res.json({ foo: 'fighters' }));
       const sugoServer = createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res)).setLogger({
-        debug(message) {},
-        info(message) {},
-        warn(message) {},
-        error(message) {},
-        log(message) {},
+        debug(message) {
+          console;
+        },
+        info(message) {
+          console;
+        },
+        warn(message) {
+          console;
+        },
+        error(message) {
+          console;
+        },
+        log(message) {
+          console;
+        },
       });
       const response = await supertest(sugoServer).get('/foo');
       response.status.should.be.eql(200);
