@@ -22,6 +22,8 @@ The syntax for adding routes is heavily inspired by the express router. Although
 
 Paths are parsed using the [path-to-regexp](https://github.com/pillarjs/path-to-regexp) module. This module is mantained by the ExpressJS team through the [pillarjs](https://github.com/pillarjs/) project.
 
+Uses the [normalize](https://nodejs.org/docs/latest-v10.x/api/path.html#path_path_normalize_path) method from the [NodeJS path module](https://nodejs.org/docs/latest-v10.x/api/path.html) in the given paths so **////foo** will be stored as **/foo**.
+
 ```typescript
 import { Router, IRequest, IResponse } from '@sugo/router';
 const router = new Router();

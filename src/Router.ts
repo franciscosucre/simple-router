@@ -14,7 +14,6 @@ export class Router {
   }
 
   public match(method: string, path: string): Route | null {
-    path = normalize(path);
     const route = this.routes.find(r => r.method === method && r.regex.test(normalize(path)));
     return route || null;
   }
