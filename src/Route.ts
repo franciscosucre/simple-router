@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import * as http from 'http';
+import { normalize } from 'path';
 import * as pathToRegexp from 'path-to-regexp';
 import * as url from 'url';
 import { HandlerFunction, INextFunction } from './interfaces';
@@ -19,7 +20,7 @@ export class Route {
     assert(typeof path === 'string', `The "path" parameter must be a string. Value: ${path}`);
     assert(args.length > 0, 'At least one handler function must be passed');
     this.method = method;
-    this.path = path;
+    this.path = normalize(path);
     this.handlers = args;
     this.keys = [];
     this.regex = pathToRegexp(path, this.keys);

@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import { normalize } from 'path';
 import * as url from 'url';
 import { HandlerFunction } from './interfaces';
 import Route from './Route';
@@ -13,7 +14,8 @@ export class Router {
   }
 
   public match(method: string, path: string): Route | null {
-    const route = this.routes.find(r => r.method === method && r.regex.test(path));
+    path = normalize(path);
+    const route = this.routes.find(r => r.method === method && r.regex.test(normalize(path)));
     return route || null;
   }
 
@@ -35,6 +37,7 @@ export class Router {
     assert(args.length > 0, 'At least one handler function must be passed');
     const handlers = this.middleware.concat(args);
     assert(handlers && handlers.length > 0);
+    path = normalize(path);
     let route = this.routes.find(r => r.method === method && r.path === path);
     if (!route) {
       const firstHandler = handlers.shift();
@@ -54,7 +57,7 @@ export class Router {
     assert(router instanceof Router, `router parameter must be Router instance, got ${typeof router}`);
     const routes = router.routes.map(r => r);
     for (const route of routes) {
-      this.addRoute(route.method, path + route.path, ...route.handlers);
+      this.addRoute(route.method, normalize(path + route.path), ...route.handlers);
     }
     return this;
   }
