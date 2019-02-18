@@ -3,7 +3,7 @@ import * as url from 'url';
 import { HandlerFunction } from './interfaces';
 import Route from './Route';
 
-export default class Router {
+export class Router {
   public routes: Route[];
   public middleware: HandlerFunction[] = [];
 
@@ -111,3 +111,5 @@ export default class Router {
     return this;
   }
 }
+
+export default Router;

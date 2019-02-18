@@ -32,6 +32,7 @@
     "path-to-regexp": "^2.4.0"
   },
   "devDependencies": {
+    "@sugo/server": "^1.6.0",
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.5",
     "@types/node": "^10.12.21",

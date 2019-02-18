@@ -1,5 +1,4 @@
-import * as sugoJS from '@sugo/server';
-import { ILogger } from '@sugo/server';
+import { createServer } from '@sugo/server';
 import SuGoRequest from '@sugo/server/dist/Request';
 import SuGoResponse from '@sugo/server/dist/Response';
 import * as assert from 'assert';
@@ -346,7 +345,13 @@ describe('Simple NodeJS Router', () => {
   describe(`@sugo/server compability`, () => {
     it('should be compatible', async () => {
       router.get('/foo', (req: SuGoRequest, res: SuGoResponse) => res.json({ foo: 'fighters' }));
-      const sugoServer = sugoJS.createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res));
+      const sugoServer = createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res)).setLogger({
+        debug(message) {},
+        info(message) {},
+        warn(message) {},
+        error(message) {},
+        log(message) {},
+      });
       const response = await supertest(sugoServer).get('/foo');
       response.status.should.be.eql(200);
     });
