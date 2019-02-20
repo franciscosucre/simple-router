@@ -65,12 +65,15 @@ router.useSubrouter('/second', secondRouter);
 
 ## **Router Middleware**
 
-Middleware can be added for the whole router using the useMiddleware method. The middleware stack is added at the start of any route handler stack when we add the route. A middleware only affects routes that were added after the middleware was added.
+Middleware can be added for the whole router using the useMiddleware method. The middleware stack is added at the start of any route handler stack when we add the route. A middleware only affects routes that were added after the middleware was added. Each middleware must call the next function in order to continue the middleware stack.
 
 ```typescript
-import { Router, IRequest, IResponse } from '@sugo/router';
+import { Router, IRequest, IResponse, INextFunction } from '@sugo/router';
 const router = new Router();
-router.useMiddleware((req: IRequest, res: IResponse) => (req.foo = 'fighters'));
+router.useMiddleware(async (req: IRequest, res: IResponse, next?: INextFunction) => {
+  req.foo = 'fighters';
+  next ? await next() : null;
+});
 router.get('/foo', (req: IRequest, res: IResponse) => res.end(JSON.stringify({ foo: req.foo })));
 router.post('/fighter', (req: IRequest, res: IResponse) => res.end(JSON.stringify({ foo: req.foo })));
 // The foo IS available in the /foo and /fighter routes
@@ -84,9 +87,12 @@ router.useMiddleware((req: IRequest, res: IResponse) => (req.fighters = true));
 Route middleware can be achieved using the .all() method. It makes sure that the given function is executed on each method in the selected route.
 
 ```typescript
-import { Router, IRequest, IResponse } from '@sugo/router';
+import { Router, IRequest, IResponse, INextFunction } from '@sugo/router';
 const router = new Router();
-router.all('/foo', (req: IRequest, res: IResponse) => (req.foo = 'fighters'));
+router.all('/foo', (req: IRequest, res: IResponse, next?: INextFunction) => {
+  req.foo = 'fighters';
+  next ? await next() : null;
+};
 router.get('/foo', (req: IRequest, res: IResponse) => res.end(JSON.stringify({ foo: req.foo })));
 router.post('/foo', (req: IRequest, res: IResponse) => res.end(JSON.stringify({ foo: req.foo })));
 // The foo IS available in all the /foo routes
