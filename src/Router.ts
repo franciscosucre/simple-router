@@ -32,18 +32,14 @@ export class Router {
     await route.handle(req, res);
   }
 
-  public addRoute(method: string, path: string, ...args: HandlerFunction[]) {
-    assert(args.length > 0, 'At least one handler function must be passed');
-    const handlers = this.middleware.concat(args);
-    assert(handlers && handlers.length > 0);
-    path = normalize(path);
-    let route = this.routes.find(r => r.method === method && r.path === path);
+  public addRoute(method: string, path: string, ...handlers: HandlerFunction[]) {
+    assert(handlers.length > 0, 'At least one handler function must be passed');
+    const middleware = this.middleware.slice();
+    let route = this.match(method, path);
     if (!route) {
-      const firstHandler = handlers.shift();
-      if (!firstHandler) {
-        throw new Error('No firstHandler found');
-      }
-      route = new Route(method, path, firstHandler);
+      const firstHandler = middleware.length > 0 ? middleware.shift() : handlers.shift();
+      route = new Route(method, path, firstHandler as HandlerFunction);
+      route.handlers = route.handlers.concat(middleware);
       this.routes.push(route);
     }
     route.handlers = route.handlers.concat(handlers);

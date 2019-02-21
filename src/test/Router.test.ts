@@ -1,4 +1,4 @@
-import { createServer } from '@sugo/server';
+import { createServer, ILogger } from '@sugo/server';
 import SuGoRequest from '@sugo/server/dist/Request';
 import SuGoResponse from '@sugo/server/dist/Response';
 import * as assert from 'assert';
@@ -7,6 +7,24 @@ import * as http from 'http';
 import * as supertest from 'supertest';
 import Router from '..';
 import { INextFunction } from '../interfaces';
+
+const dummyLogger: ILogger = {
+  debug() {
+    return;
+  },
+  error() {
+    return;
+  },
+  info() {
+    return;
+  },
+  log() {
+    return;
+  },
+  warn() {
+    return;
+  },
+};
 const AssertionError = assert.AssertionError;
 let router: Router;
 const OPTIONS = 'OPTIONS';
@@ -238,6 +256,19 @@ describe('Simple NodeJS Router', () => {
       post.handlers[0].should.be.eql(SIMPLE_MIDDLEWARE);
       post.handlers[1].should.be.eql(SIMPLE_HANDLER);
     });
+
+    it('should add the middleware only on routes declared after the middleware was added', async () => {
+      router.get('/foo', SIMPLE_HANDLER);
+      router.useMiddleware(SIMPLE_MIDDLEWARE);
+      router.post('/fighter', SIMPLE_HANDLER);
+      router.routes.length.should.be.eql(2);
+      const [get, post] = router.routes;
+      get.handlers.length.should.be.eql(1);
+      get.handlers[0].should.be.eql(SIMPLE_HANDLER);
+      post.handlers.length.should.be.eql(2);
+      post.handlers[0].should.be.eql(SIMPLE_MIDDLEWARE);
+      post.handlers[1].should.be.eql(SIMPLE_HANDLER);
+    });
   });
 
   describe(`useSubrouter`, () => {
@@ -369,7 +400,9 @@ describe('Simple NodeJS Router', () => {
   describe(`@sugo/server compability`, () => {
     it('should be compatible', async () => {
       router.get('/foo', (req: SuGoRequest, res: SuGoResponse) => res.json({ foo: 'fighters' }));
-      const sugoServer = createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res));
+      const sugoServer = createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res)).setLogger(
+        dummyLogger,
+      );
       const response = await supertest(sugoServer).get('/foo');
       response.status.should.be.eql(200);
     });

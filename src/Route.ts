@@ -9,7 +9,7 @@ export class Route {
   public method: string;
   public path: string;
   public handlers: HandlerFunction[] = [];
-  public keys: pathToRegexp.Key[];
+  public keys: pathToRegexp.Key[] = [];
   public regex: RegExp;
 
   constructor(method: string, path: string, ...args: HandlerFunction[]) {
@@ -22,7 +22,6 @@ export class Route {
     this.method = method;
     this.path = normalize(path);
     this.handlers = args;
-    this.keys = [];
     this.regex = pathToRegexp(path, this.keys);
   }
 
