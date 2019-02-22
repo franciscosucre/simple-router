@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { normalize } from 'path';
+import { posix } from 'path';
 import * as url from 'url';
 import { HandlerFunction } from './interfaces';
 import Route from './Route';
@@ -14,7 +14,7 @@ export class Router {
   }
 
   public match(method: string, path: string): Route | null {
-    const route = this.routes.find(r => r.method === method && r.regex.test(normalize(path)));
+    const route = this.routes.find(r => r.method === method && r.regex.test(posix.normalize(path)));
     return route || null;
   }
 
@@ -52,7 +52,7 @@ export class Router {
     assert(router instanceof Router, `router parameter must be Router instance, got ${typeof router}`);
     const routes = router.routes.map(r => r);
     for (const route of routes) {
-      this.addRoute(route.method, normalize(path + route.path), ...route.handlers);
+      this.addRoute(route.method, posix.normalize(path + route.path), ...route.handlers);
     }
     return this;
   }
