@@ -1,6 +1,7 @@
 import * as assert from 'assert';
 import { posix } from 'path';
 import * as url from 'url';
+import RouteNotFoundError from './exceptions';
 import { HandlerFunction } from './interfaces';
 import Route from './Route';
 
@@ -25,9 +26,7 @@ export class Router {
     }
     const route = this.match(req.method || '', pathname);
     if (!route) {
-      throw new Error(
-        'No route was found when calling the handle method, please check with the match method first so you can handle the error',
-      );
+      throw new RouteNotFoundError(req.method || '', pathname);
     }
     await route.handle(req, res);
   }
