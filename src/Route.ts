@@ -3,7 +3,7 @@ import * as http from 'http';
 import { posix } from 'path';
 import * as pathToRegexp from 'path-to-regexp';
 import * as url from 'url';
-import { HandlerFunction, INextFunction } from './interfaces';
+import { HandlerFunction, INextFunction, IRequest } from './interfaces';
 
 export class Route {
   public method: string;
@@ -25,7 +25,7 @@ export class Route {
     this.regex = pathToRegexp(path, this.keys);
   }
 
-  public async handle(req: any, res: any) {
+  public async handle(req: IRequest, res: any) {
     const { pathname } = url.parse(req.url || '');
     if (!pathname) {
       throw new Error('Could not parse pathname from url');

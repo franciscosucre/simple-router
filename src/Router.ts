@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { posix } from 'path';
 import * as url from 'url';
 import RouteNotFoundError from './exceptions';
-import { HandlerFunction } from './interfaces';
+import { HandlerFunction, IRequest } from './interfaces';
 import Route from './Route';
 
 export class Router {
@@ -19,8 +19,8 @@ export class Router {
     return route || null;
   }
 
-  public async handle(req: any, res: any) {
-    const { pathname } = url.parse(req.url || '');
+  public async handle(req: IRequest, res: any) {
+    const { pathname } = url.parse(req.url as string);
     if (!pathname) {
       throw new Error('Could not parse pathname from url');
     }

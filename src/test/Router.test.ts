@@ -1,4 +1,4 @@
-import { createServer, ILogger } from '@sugo/server';
+import { createServer } from '@sugo/server';
 import SuGoRequest from '@sugo/server/dist/Request';
 import SuGoResponse from '@sugo/server/dist/Response';
 import * as assert from 'assert';
@@ -6,25 +6,8 @@ import * as chai from 'chai';
 import * as http from 'http';
 import * as supertest from 'supertest';
 import Router from '..';
-import { INextFunction } from '../interfaces';
+import { INextFunction, IRequest } from '../interfaces';
 
-const dummyLogger: ILogger = {
-  debug() {
-    return;
-  },
-  error() {
-    return;
-  },
-  info() {
-    return;
-  },
-  log() {
-    return;
-  },
-  warn() {
-    return;
-  },
-};
 const AssertionError = assert.AssertionError;
 let router: Router;
 const OPTIONS = 'OPTIONS';
@@ -39,7 +22,7 @@ const PATH = '/foo';
 const DUPLICATE_DELIMETERS_PATH = '/////foo';
 const PATH_WITH_ARGUMENTS = '/:foo/:fighters';
 const headers = { 'Content-Type': 'application/json' };
-const SIMPLE_HANDLER = (req: any, res: http.ServerResponse) => {
+const SIMPLE_HANDLER = (req: IRequest, res: http.ServerResponse) => {
   res.writeHead(200, headers);
   res.end(
     JSON.stringify({
@@ -47,8 +30,8 @@ const SIMPLE_HANDLER = (req: any, res: http.ServerResponse) => {
     }),
   );
 };
-const SIMPLE_MIDDLEWARE = (req: any, res: http.ServerResponse) => {
-  req.middlwarePassed = true;
+const SIMPLE_MIDDLEWARE = (req: IRequest, res: http.ServerResponse) => {
+  (req as any).middlwarePassed = true;
 };
 chai.should();
 
@@ -335,15 +318,15 @@ describe('Simple NodeJS Router', () => {
     });
 
     it('should run the middleware first and then the handlers', async () => {
-      router.useMiddleware(async (req: any, res: any, next?: INextFunction) => {
-        req.middleware = true;
+      router.useMiddleware(async (req: IRequest, res: any, next?: INextFunction) => {
+        (req as any).middleware = true;
         if (next) {
           await next();
         }
       });
-      router.get(PATH, (req: any, res: any) => {
+      router.get(PATH, (req: IRequest, res: any) => {
         res.writeHead(200, headers);
-        res.end(JSON.stringify({ middleware: req.middleware }));
+        res.end(JSON.stringify({ middleware: (req as any).middleware }));
       });
       const response = await supertest(server).get(PATH);
       response.status.should.be.eql(200);
@@ -351,32 +334,37 @@ describe('Simple NodeJS Router', () => {
     });
 
     it('should handle the route and then continue the middleware', async () => {
-      router.useMiddleware(async (req: any, res: any, next?: INextFunction) => {
-        req.handlerPassed = false;
-        req.middlewarePassed = false;
+      router.useMiddleware(async (req: IRequest, res: any, next?: INextFunction) => {
+        (req as any).handlerPassed = false;
+        (req as any).middlewarePassed = false;
         if (next) {
           await next();
         }
-        req.handlerPassed.should.be.eql(true);
-        req.middlewarePassed.should.be.eql(true);
+        (req as any).handlerPassed.should.be.eql(true);
+        (req as any).middlewarePassed.should.be.eql(true);
       });
-      router.useMiddleware(async (req: any, res: any, next?: INextFunction) => {
-        req.middlewarePassed = true;
+      router.useMiddleware(async (req: IRequest, res: any, next?: INextFunction) => {
+        (req as any).middlewarePassed = true;
         if (next) {
           await next();
         }
       });
-      router.get(PATH, (req: any, res: any) => {
-        req.handlerPassed = true;
+      router.get(PATH, (req: IRequest, res: any) => {
+        (req as any).handlerPassed = true;
         res.writeHead(200, headers);
-        res.end(JSON.stringify({ handlerPassed: req.handlerPassed, middlewarePassed: req.middlewarePassed }));
+        res.end(
+          JSON.stringify({
+            handlerPassed: (req as any).handlerPassed,
+            middlewarePassed: (req as any).middlewarePassed,
+          }),
+        );
       });
       const response = await supertest(server).get(PATH);
       response.status.should.have.be.eql(200);
     });
 
     it('should handle the middleware errors', async () => {
-      router.useMiddleware(async (req: any, res: any, next?: INextFunction) => {
+      router.useMiddleware(async (req: IRequest, res: any, next?: INextFunction) => {
         throw new Error('MiddlewareError');
       });
       router.get(PATH, SIMPLE_HANDLER);
@@ -400,9 +388,7 @@ describe('Simple NodeJS Router', () => {
   describe(`@sugo/server compability`, () => {
     it('should be compatible', async () => {
       router.get('/foo', (req: SuGoRequest, res: SuGoResponse) => res.json({ foo: 'fighters' }));
-      const sugoServer = createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res)).setLogger(
-        dummyLogger,
-      );
+      const sugoServer = createServer((req: SuGoRequest, res: SuGoResponse) => router.handle(req, res));
       const response = await supertest(sugoServer).get('/foo');
       response.status.should.be.eql(200);
     });
