@@ -1,4 +1,4 @@
-import { createServer } from '@sugo/server';
+import { createServer, IDynamicObject } from '@sugo/server';
 import SuGoRequest from '@sugo/server/dist/Request';
 import SuGoResponse from '@sugo/server/dist/Response';
 import * as assert from 'assert';
@@ -6,7 +6,9 @@ import * as chai from 'chai';
 import * as http from 'http';
 import * as supertest from 'supertest';
 import Router from '..';
-import { INextFunction, IRequest } from '../interfaces';
+import { INextFunction } from '../interfaces';
+
+type DynamicIncomingMessage = http.IncomingMessage & IDynamicObject;
 
 const AssertionError = assert.AssertionError;
 let router: Router;
@@ -22,7 +24,7 @@ const PATH = '/foo';
 const DUPLICATE_DELIMETERS_PATH = '/////foo';
 const PATH_WITH_ARGUMENTS = '/:foo/:fighters';
 const headers = { 'Content-Type': 'application/json' };
-const SIMPLE_HANDLER = (req: IRequest, res: http.ServerResponse) => {
+const SIMPLE_HANDLER = (req: DynamicIncomingMessage, res: http.ServerResponse) => {
   res.writeHead(200, headers);
   res.end(
     JSON.stringify({
@@ -30,7 +32,7 @@ const SIMPLE_HANDLER = (req: IRequest, res: http.ServerResponse) => {
     }),
   );
 };
-const SIMPLE_MIDDLEWARE = (req: IRequest, res: http.ServerResponse) => {
+const SIMPLE_MIDDLEWARE = (req: DynamicIncomingMessage, res: http.ServerResponse) => {
   (req as any).middlwarePassed = true;
 };
 chai.should();
@@ -318,13 +320,13 @@ describe('Simple NodeJS Router', () => {
     });
 
     it('should run the middleware first and then the handlers', async () => {
-      router.useMiddleware(async (req: IRequest, res: any, next?: INextFunction) => {
+      router.useMiddleware(async (req: DynamicIncomingMessage, res: any, next?: INextFunction) => {
         (req as any).middleware = true;
         if (next) {
           await next();
         }
       });
-      router.get(PATH, (req: IRequest, res: any) => {
+      router.get(PATH, (req: DynamicIncomingMessage, res: any) => {
         res.writeHead(200, headers);
         res.end(JSON.stringify({ middleware: (req as any).middleware }));
       });
@@ -334,7 +336,7 @@ describe('Simple NodeJS Router', () => {
     });
 
     it('should handle the route and then continue the middleware', async () => {
-      router.useMiddleware(async (req: IRequest, res: any, next?: INextFunction) => {
+      router.useMiddleware(async (req: DynamicIncomingMessage, res: any, next?: INextFunction) => {
         (req as any).handlerPassed = false;
         (req as any).middlewarePassed = false;
         if (next) {
@@ -343,13 +345,13 @@ describe('Simple NodeJS Router', () => {
         (req as any).handlerPassed.should.be.eql(true);
         (req as any).middlewarePassed.should.be.eql(true);
       });
-      router.useMiddleware(async (req: IRequest, res: any, next?: INextFunction) => {
+      router.useMiddleware(async (req: DynamicIncomingMessage, res: any, next?: INextFunction) => {
         (req as any).middlewarePassed = true;
         if (next) {
           await next();
         }
       });
-      router.get(PATH, (req: IRequest, res: any) => {
+      router.get(PATH, (req: DynamicIncomingMessage, res: any) => {
         (req as any).handlerPassed = true;
         res.writeHead(200, headers);
         res.end(
@@ -364,7 +366,7 @@ describe('Simple NodeJS Router', () => {
     });
 
     it('should handle the middleware errors', async () => {
-      router.useMiddleware(async (req: IRequest, res: any, next?: INextFunction) => {
+      router.useMiddleware(async (req: DynamicIncomingMessage, res: any, next?: INextFunction) => {
         throw new Error('MiddlewareError');
       });
       router.get(PATH, SIMPLE_HANDLER);
